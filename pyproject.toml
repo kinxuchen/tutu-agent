@@ -1,0 +1,28 @@
+[project]
+name = "yangzhou-llm"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "xuchen01",email = "kingxc1991@foxmail.com"}
+]
+readme = "README.md"
+requires-python = ">=3.13,<4.0"
+dependencies = [
+    "langgraph (>=0.3.21,<0.4.0)",
+    "langchain-openai (>=0.3.11,<0.4.0)",
+    "pymysql (>=1.1.1,<2.0.0)",
+    "sqlalchemy (>=2.0.40,<3.0.0)",
+    "fastapi (>=0.115.12,<0.116.0)",
+    "uvicorn (>=0.34.0,<0.35.0)",
+    "dotenv (>=0.9.9,<0.10.0)",
+    "langchain-community (>=0.3.20,<0.4.0)",
+    "redis (>=5.2.1,<6.0.0)",
+    "jsonpickle (>=4.0.2,<5.0.0)",
+    "py-redis (>=1.1.1,<2.0.0)",
+    "httpx[socks] (>=0.28.1,<0.29.0)"
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"

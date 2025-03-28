@@ -1,0 +1,10 @@
+POST http://127.0.0.1:8002/chat/user_id_1/session_id_1
+Content-Type: application/json
+
+{
+    "input": "你能做什么呢？"
+}
+
+###
+GET http://127.0.0.1:8002/
+Content-Type: 'application/json'
