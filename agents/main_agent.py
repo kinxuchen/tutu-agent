@@ -4,6 +4,7 @@ from langchain_core.runnables import ConfigurableFieldSpec
 import operator
 from langchain_core.messages import BaseMessage
 from agents.intent.agent import intent_agent
+from agents.order.agent import order_agent
 from redis.asyncio import Redis as RedisAsync
 from redis import Redis
 from  RedisCheckpointerSaver import  RedisCheckpointSaver
@@ -11,7 +12,8 @@ from  RedisCheckpointerSaver import  RedisCheckpointSaver
 
 class MainAgentState(Dict):
     messages: Annotated[List[BaseMessage], operator.add] = []
-    intent: Optional[Literal['chat', 'sql', 'search']] = 'chat'
+    is_create_order: Optional[bool] = False
+    intent: Optional[Literal['chat', 'sql', 'search', 'order']] = 'chat'
     result: Optional[str] = None # 最终输出结果
 
 main_graph = StateGraph(MainAgentState)
@@ -20,12 +22,17 @@ main_graph = StateGraph(MainAgentState)
 
 
 def start_node(state: MainAgentState):
-    result = intent_agent.invoke(input={
-        "messages": state['messages']
-    })
-    return {
-        'intent': result['intent']
-    }
+    if state['is_create_order']:
+        return {
+            'intent': 'order'
+        }
+    else:
+        result = intent_agent.invoke(input={
+            "messages": state['messages']
+        })
+        return {
+            'intent': result['intent']
+        }
 
 # 判断执行哪个意图
 def continue_intent_node(state: MainAgentState):
@@ -45,6 +52,7 @@ def sql_intent_node(state: MainAgentState):
 def search_intent_node(state: MainAgentState):
     pass
 
+# 定义会话聊天
 def chat_intent_node(state: MainAgentState):
     from llm import llm
     from langchain_core.prompts import MessagesPlaceholder, ChatPromptTemplate
@@ -64,6 +72,14 @@ def chat_intent_node(state: MainAgentState):
         "messages": [result]
     }
 
+def order_intent_node(state: MainAgentState):
+    result = order_agent.invoke({
+        "messages": state['messages']
+    })
+    return {
+        'result': result
+    }
+
 
 
 main_graph.add_node('start_node', start_node)
@@ -71,17 +87,20 @@ main_graph.add_node('continue_intent_node', continue_intent_node)
 main_graph.add_node('sql_intent_node', sql_intent_node)
 main_graph.add_node('search_intent_node', search_intent_node)
 main_graph.add_node('chat_intent_node', chat_intent_node)
+main_graph.add_node('order_intent_node', order_intent_node)
 
 main_graph.add_conditional_edges('start_node', continue_intent_node, {
     'sql': 'sql_intent_node',
     'chat': 'chat_intent_node',
-    'search': 'chat_intent_node'
+    'search': 'chat_intent_node',
+    'order': 'order_intent_node'
 })
 
 main_graph.set_entry_point('start_node')
 
 main_graph.add_edge('chat_intent_node', END)
 main_graph.add_edge('sql_intent_node', END)
+main_graph.add_edge('order_intent_node', END)
 
 # 构建智能体
 def create_agent(redis_async: RedisAsync, redis: Redis):

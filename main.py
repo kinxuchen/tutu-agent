@@ -17,7 +17,8 @@ agent: CompiledStateGraph | None = None
 app = FastAPI()
 
 class ChatRequestBody(BaseModel):
-    input: str
+    input: str # 用户输入
+    is_create_order: bool = False # 是否需要创建订单
 
 
 # 启动服务连接 Redis 和创建智能体
@@ -38,7 +39,8 @@ async def chat(user_id: str, thread_id: str, body: ChatRequestBody):
         return {"success": False }
     try:
         result = agent.invoke(input={
-            "messages": [HumanMessage(content=body.input)]
+            "messages": [HumanMessage(content=body.input)],
+            'is_create_order': body.is_create_order
         }, config={
             "configurable": {
                 "thread_id": "session_id",

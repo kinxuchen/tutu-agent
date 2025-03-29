@@ -12,7 +12,7 @@ from constant import db_schema
 # search 普通的搜索任务
 class IntentAgentState(Dict):
     messages: Annotated[List[BaseMessage], operator.add]
-    intent: Literal['chat', 'sql', 'search'] = 'chat' # 默认是一个 chat 聊天
+    intent: Literal['chat', 'sql', 'search'] = 'chat' # 默认是一个 chat 聊天 sql 数据查询，search 配置一个 agent, order 创建订单
 
 intent_graph = StateGraph(IntentAgentState)
 
