@@ -74,16 +74,26 @@ def initial_clientele_node(state: OrderState):
         """)
     ])
 
-    chain = prompts | llm
+    json_schema = {
+        "title": "CustomerInformationExtractor",  # 添加一个描述性的标题
+        "description": "提取客户的详细信息", # 添加一个描述
+        "type": "object",
+        "properties": {
+            "clientele": {
+                "type": "string",
+                "description": "客户信息" # "Customer information"
+            }
+        },
+        "required": ["clientele"] # 最好也明确指出哪些字段是必需的
+    }
+    chain = prompts | llm.with_structured_output(json_schema, method="function_calling")
 
     result = chain.invoke({
         "input": state['messages'][-1].content
     })
     print('result', result)
-    if result and result.content != '':
-        return {
-            'clientele': result.content
-        }
+    if result['clientele'] is not None and result['clientele'] != '':
+        return result
     return state
 
 def query_clientele_node(state: OrderState):
@@ -91,20 +101,20 @@ def query_clientele_node(state: OrderState):
     new_state = state.copy()
     new_state['query_client'] = []
     try:
-        if state['client'] is not None and state['client'] != '':
+        if state['clientele'] is not None and state['clientele'] != '':
             result = sql_agent.invoke({
                 "input": f"""
-                帮我查询客户信息,
-                你可以使用 LIKE 模糊查询，你需要考虑用户可能少填写字符的情况，你需要使用模糊查询解决，示例如下: 
+                Help me check customer information
+                You can use the LIKE fuzzy query. You need to account for cases where users might input incomplete characters, and you should resolve this by using fuzzy queries. Here's an example:
                 `SELECT * FROM table_name WHERE name LIKE '%张%集%';`
-                客户信息如下:
-                {state['client']}
+                The customer information is as follows:
+                {state['clientele']}
             """
             })
         for tool in result['intermediate_steps']:
             if tool and isinstance(tool, tuple) and tool[0] is not None and hasattr(tool[0], 'tool'):
                 if tool[0].tool == 'sql_db_query' and tool[1] != '':
-                    new_state['query_client'] = new_state['query_client'] + jsonpickle.decode(tool[1])
+                    new_state['query_client'] += jsonpickle.decode(tool[1])
         return new_state
     except Exception as e:
         return new_state
@@ -121,7 +131,7 @@ def query_inventory_node(state: OrderState):
         for tool in result['intermediate_steps']:
             if tool and isinstance(tool, tuple) and tool[0] is not None and hasattr(tool[0], 'tool'):
                 if tool[0].tool == 'sql_db_query' and isinstance(tool[1], str) and tool[1] != '':
-                    new_state['query_order'] =  new_state['query_order']  + jsonpickle.decode(tool[1])
+                    new_state['query_order'] += jsonpickle.decode(tool[1])
         return new_state
     except Exception as e:
         return new_state
