@@ -1,24 +1,23 @@
-from langgraph.graph import StateGraph, END, START
+from langgraph.graph import StateGraph, END
 from typing import Dict, Optional, Annotated, List, Literal
-from langchain_core.runnables import ConfigurableFieldSpec
-import operator
 from langchain_core.messages import BaseMessage
 from agents.intent.agent import intent_agent
 from agents.order.agent import order_agent
 from redis.asyncio import Redis as RedisAsync
 from redis import Redis
-from  RedisCheckpointerSaver import  RedisCheckpointSaver
+from agents.prompt import summary_template
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from checkpointer.RedisCheckpointerSaver import  RedisCheckpointSaver
 
+MAX_SIZE = 5
 
 class MainAgentState(Dict):
-    messages: Annotated[List[BaseMessage], operator.add] = []
+    messages: List[BaseMessage] = []
     is_create_order: Optional[bool] = False
     intent: Optional[Literal['chat', 'sql', 'search', 'order']] = 'chat'
     result: Optional[str] = None # 最终输出结果
 
 main_graph = StateGraph(MainAgentState)
-
-
 
 
 def start_node(state: MainAgentState):
@@ -33,6 +32,28 @@ def start_node(state: MainAgentState):
         return {
             'intent': result['intent']
         }
+
+# 总结摘要/切片 可以在这个步骤加一个 summary 总结的功能
+def summary_messages_node(state:MainAgentState):
+    from llm import llm
+    from langchain_core.runnables import RunnablePassthrough
+    messages = state['messages']
+    if len(messages) > MAX_SIZE:
+        new_messages = messages[0:-1]
+        chain = ChatPromptTemplate.from_messages([
+            ('system', summary_template),
+            MessagesPlaceholder(variable_name="messages")
+        ]) | llm
+        summary_result = chain.invoke({
+            "messages": new_messages
+        })
+        print('总结结果', summary_result)
+        return {
+            "messages": [summary_result, messages[-1]]
+        }
+    return state
+
+
 
 # 判断执行哪个意图
 def continue_intent_node(state: MainAgentState):
@@ -69,7 +90,7 @@ def chat_intent_node(state: MainAgentState):
         "messages": state['messages']
     })
     return {
-        "messages": [result]
+        "messages": state['messages'] + [result]
     }
 
 def order_intent_node(state: MainAgentState):
@@ -83,12 +104,15 @@ def order_intent_node(state: MainAgentState):
 
 
 main_graph.add_node('start_node', start_node)
+main_graph.add_node('summary_messages_node', summary_messages_node)
 main_graph.add_node('continue_intent_node', continue_intent_node)
 main_graph.add_node('sql_intent_node', sql_intent_node)
 main_graph.add_node('search_intent_node', search_intent_node)
 main_graph.add_node('chat_intent_node', chat_intent_node)
 main_graph.add_node('order_intent_node', order_intent_node)
 
+
+main_graph.add_edge('summary_messages_node', 'start_node')
 main_graph.add_conditional_edges('start_node', continue_intent_node, {
     'sql': 'sql_intent_node',
     'chat': 'chat_intent_node',
@@ -96,7 +120,7 @@ main_graph.add_conditional_edges('start_node', continue_intent_node, {
     'order': 'order_intent_node'
 })
 
-main_graph.set_entry_point('start_node')
+main_graph.set_entry_point('summary_messages_node')
 
 main_graph.add_edge('chat_intent_node', END)
 main_graph.add_edge('sql_intent_node', END)
@@ -105,4 +129,6 @@ main_graph.add_edge('order_intent_node', END)
 # 构建智能体
 def create_agent(redis_async: RedisAsync, redis: Redis):
     checkpointer = RedisCheckpointSaver(redis_async, redis, 'main_agent')
-    return main_graph.compile(checkpointer=checkpointer)
+    agent = main_graph.compile(checkpointer=checkpointer)
+    return agent
+

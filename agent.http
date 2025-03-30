@@ -2,10 +2,16 @@ POST http://127.0.0.1:8002/chat/user_id_1/session_id_1
 Content-Type: application/json
 
 {
+  "input": "什么是元编程？",
+  "is_create_order": false
+}
+
+###
+POST http://127.0.0.1:8002/stream/user_id_1/session_id_1
+Content-Type: application/json
+
+{
   "input": "辛集张显 然后查询复合细水豆沙灰、咖啡各4米（现货45/米）",
   "is_create_order": true
 }
 
-###
-GET http://127.0.0.1:8002/
-Content-Type: 'application/json'

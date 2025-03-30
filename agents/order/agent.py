@@ -6,9 +6,9 @@ from langchain_core.messages import BaseMessage
 from langchain_core.tools import tool
 from langchain.callbacks.base import BaseCallbackHandler
 import operator
-from constant import SQL_URL, db
+from constant import db
 from langchain_community.agent_toolkits import create_sql_agent
-from sql_toolkit import SQLDatabaseToolkit
+from tools.sql_toolkit import SQLDatabaseToolkit
 from agents.order.prompts import clientele_templates, SQL_PREFIX
 from llm import llm
 import jsonpickle
@@ -69,7 +69,7 @@ def initial_clientele_node(state: OrderState):
     prompts = ChatPromptTemplate.from_messages([
         ('system', clientele_templates),
         ('user', """
-            begin!
+            请提取我下面输入中的机构或者人名信息
             {input}
         """)
     ])
@@ -86,14 +86,15 @@ def initial_clientele_node(state: OrderState):
         },
         "required": ["clientele"] # 最好也明确指出哪些字段是必需的
     }
-    chain = prompts | llm.with_structured_output(json_schema, method="function_calling")
+    chain = prompts | llm
 
     result = chain.invoke({
         "input": state['messages'][-1].content
     })
-    print('result', result)
-    if result['clientele'] is not None and result['clientele'] != '':
-        return result
+    if result.content is not None and result.content != '':
+        return {
+            'clientele': result.content
+        }
     return state
 
 def query_clientele_node(state: OrderState):
@@ -115,7 +116,9 @@ def query_clientele_node(state: OrderState):
             if tool and isinstance(tool, tuple) and tool[0] is not None and hasattr(tool[0], 'tool'):
                 if tool[0].tool == 'sql_db_query' and tool[1] != '':
                     new_state['query_client'] += jsonpickle.decode(tool[1])
-        return new_state
+        return {
+            'query_client': new_state['query_client']
+        }
     except Exception as e:
         return new_state
 # 1. 查询库存数据
