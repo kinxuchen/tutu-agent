@@ -2,8 +2,8 @@ POST http://127.0.0.1:8002/chat/user_id_1/session_id_1
 Content-Type: application/json
 
 {
-  "input": "什么是元编程？",
-  "is_create_order": false
+  "input": "张建显：狐狸印条咖啡 3 米(等到货)深灰夹米3米，深色3米\n（等到货）花狐复皮革咖啡3米，配皮1米印九尾狐复合四色各5米紫貂-21 单毛帕斯条1米、大人字单毛3米貉子毛单毛白尖1米，原色1米",
+  "is_create_order": true
 }
 
 ###
