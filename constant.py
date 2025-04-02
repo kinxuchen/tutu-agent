@@ -22,7 +22,19 @@ MYSQL_USER=os.getenv('MYSQL_USER')
 MYSQL_PASSWORD=os.getenv('MYSQL_PASSWORD')
 SQL_URL = "mysql+pymysql://{}:{}@{}:{}/{}".format(MYSQL_USER,MYSQL_PASSWORD,MYSQL_HOST,MYSQL_PORT,MYSQL_DB)
 
+MILVUS_HOST=os.getenv('MILVUS_HOST')
+MILVUS_TOKEN=os.getenv('MILVUS_TOKEN')
+MILVUS_PASSWORD=os.getenv('MILVUS_PASSWORD')
+MILVUS_USER=os.getenv('MILVUS_USER')
+
+EMBEDDING_API_KEY=os.getenv('EMBEDDING_API_KEY')
+EMBEDDING_BASE_URL=os.getenv('EMBEDDING_BASE_URL')
+EMBEDDING_MODEL=os.getenv('EMBEDDING_MODEL')
+
+COLLECTION_INVENTORY_NAME='inventory'
+
 db = SQLDatabase.from_uri(SQL_URL)
+
 
 db_schema = db.get_context()
 
