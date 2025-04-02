@@ -36,7 +36,6 @@ def start_node(state: MainAgentState):
 # 总结摘要/切片 可以在这个步骤加一个 summary 总结的功能
 def summary_messages_node(state:MainAgentState):
     from llm import llm
-    from langchain_core.runnables import RunnablePassthrough
     messages = state['messages']
     if len(messages) > MAX_SIZE:
         new_messages = messages[0:-1]

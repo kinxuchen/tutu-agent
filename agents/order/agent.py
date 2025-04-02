@@ -6,15 +6,17 @@ from langchain_core.messages import BaseMessage
 from langchain_core.tools import tool
 from langchain.callbacks.base import BaseCallbackHandler
 import operator
-from constant import db
+from constant import db, COLLECTION_INVENTORY_NAME, MILVUS_HOST, MILVUS_TOKEN, MILVUS_USER, MILVUS_PASSWORD
 from langchain_community.agent_toolkits import create_sql_agent
 from tools.sql_toolkit import SQLDatabaseToolkit
 from agents.order.prompts import clientele_templates, SQL_PREFIX
-from llm import llm
+from llm import llm, embeddings
+from langchain_milvus import Milvus
 import jsonpickle
 from uuid import UUID
+from components.store import get_vector_store
 
-
+vector_store = get_vector_store()
 # 获取数据库上下文
 db_context = db.get_context()
 @tool
@@ -52,7 +54,6 @@ sql_agent = create_sql_agent(
     prefix=SQL_PREFIX,
     agent_type=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
 )
-
 
 
 class OrderState(Dict):
@@ -97,6 +98,7 @@ def initial_clientele_node(state: OrderState):
         }
     return state
 
+# 检索客户数据
 def query_clientele_node(state: OrderState):
     last_message = state['messages'][-1]
     new_state = state.copy()
@@ -126,6 +128,14 @@ def query_inventory_node(state: OrderState):
     last_message = state['messages'][-1]
     new_state = state.copy()
     new_state['query_order'] = []
+    query_vector = embeddings.embed_query(last_message.content)
+    vectory_result = vector_store.search(
+        collection_name=COLLECTION_INVENTORY_NAME,
+        limit=1,
+        data=[query_vector],
+        output_fields=['id', 'primary_key']
+    )
+    print('检索数据', vectory_result)
     try:
         if last_message:
             result = sql_agent.invoke({
