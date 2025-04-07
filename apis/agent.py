@@ -3,6 +3,7 @@ from fastapi import APIRouter
 from agents.agent import Agent
 from langchain_core.messages import HumanMessage
 import traceback
+from agents.receipt.agent import receipt_agent, ReceiptState
 
 agent_router = APIRouter(prefix="/agent")
 
@@ -35,6 +36,20 @@ async def chat(user_id: str, thread_id: str, body: ChatRequestBody):
             "success": False
         }
 
+# 单据接口
+@agent_router.post('/receipt/{user_id}/{thread_id}')
+async def receipt_agent_request(user_id:str, thread_id: str, body: ChatRequestBody):
+    config = {
+        'configurable': {
+            'thread_id': thread_id,
+            'user_id': user_id,
+        }
+    }
+    result = receipt_agent.invoke(input=ReceiptState(messages=[HumanMessage(content=body.input)]), config=config)
+    return {
+        'success': True,
+        'result': result
+    }
 
 # 流式响应接口
 # 需要考虑，单据接口是否需要保存历史记录？

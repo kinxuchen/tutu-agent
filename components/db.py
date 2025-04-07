@@ -7,11 +7,13 @@ SQL_URL = "mysql+pymysql://{}:{}@{}:{}/{}".format(MYSQL_USER,MYSQL_PASSWORD,MYSQ
 
 engine = create_engine(SQL_URL)
 
+print('连接')
+
 metadata = MetaData()
 
 Base = declarative_base()
 
-Session: sessionmaker = sessionmaker(bind=engine)
+Session: sessionmaker = sessionmaker(bind=engine, autoflush=True)
 # 数据库初始化
 def init_db():
     Base.metadata.create_all(bind=engine)

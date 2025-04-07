@@ -6,17 +6,29 @@ from langchain_core.messages import BaseMessage
 from langchain_core.tools import tool
 from langchain.callbacks.base import BaseCallbackHandler
 import operator
-from constant import db, COLLECTION_INVENTORY_NAME, MILVUS_HOST, MILVUS_TOKEN, MILVUS_USER, MILVUS_PASSWORD
+from constant import db, COLLECTION_TUTU_NAME, MILVUS_HOST, MILVUS_TOKEN, MILVUS_USER, MILVUS_PASSWORD
 from langchain_community.agent_toolkits import create_sql_agent
 from tools.sql_toolkit import SQLDatabaseToolkit
 from agents.order.prompts import clientele_templates, SQL_PREFIX
+# from langchain_community.vectorstores import Milvus
 from llm import llm, embeddings
-from langchain_milvus import Milvus
+from langchain_milvus.vectorstores import Zilliz
 import jsonpickle
 from uuid import UUID
-from components.store import get_vector_store
 
-vector_store = get_vector_store()
+
+zilliz_vector_store = Zilliz(
+    connection_args={
+        'uri': MILVUS_HOST,
+        'token': MILVUS_TOKEN,
+        'user': MILVUS_USER,
+        'password': MILVUS_PASSWORD
+    },
+    collection_name=COLLECTION_TUTU_NAME,
+    embedding_function=embeddings
+)
+
+retriever = zilliz_vector_store.as_retriever()
 # 获取数据库上下文
 db_context = db.get_context()
 @tool
@@ -75,18 +87,6 @@ def initial_clientele_node(state: OrderState):
         """)
     ])
 
-    json_schema = {
-        "title": "CustomerInformationExtractor",  # 添加一个描述性的标题
-        "description": "提取客户的详细信息", # 添加一个描述
-        "type": "object",
-        "properties": {
-            "clientele": {
-                "type": "string",
-                "description": "客户信息" # "Customer information"
-            }
-        },
-        "required": ["clientele"] # 最好也明确指出哪些字段是必需的
-    }
     chain = prompts | llm
 
     result = chain.invoke({
@@ -125,17 +125,26 @@ def query_clientele_node(state: OrderState):
         return new_state
 # 1. 查询库存数据
 def query_inventory_node(state: OrderState):
+    from components.store import get_vector_store
+    vector_store = get_vector_store()
     last_message = state['messages'][-1]
     new_state = state.copy()
     new_state['query_order'] = []
     query_vector = embeddings.embed_query(last_message.content)
     vectory_result = vector_store.search(
-        collection_name=COLLECTION_INVENTORY_NAME,
+        collection_name=COLLECTION_TUTU_NAME,
+        anns_field='vector', # 需要查询的字段
         limit=1,
         data=[query_vector],
-        output_fields=['id', 'primary_key']
+        output_fields=['id', 'db_id', 'metadata'],
+        search_params={
+            "params": {
+                'radis': 0.3,
+                'radis_filter': 1,
+                'enable_recall_calculation': True
+            }
+        }
     )
-    print('检索数据', vectory_result)
     try:
         if last_message:
             result = sql_agent.invoke({

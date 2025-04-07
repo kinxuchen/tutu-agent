@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from langgraph.graph.state import CompiledStateGraph
 from components.db import init_db
+from components.store import initial_vector_collection
 from agents.agent import Agent
 from apis.gpts import gpts_router
 from apis.agent import agent_router
@@ -18,6 +19,7 @@ app.include_router(agent_router)
 # 启动服务连接 Redis 和创建智能体
 @app.on_event('startup')
 async def startup():
+    initial_vector_collection()
     init_db()
     Agent()
 
