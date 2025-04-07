@@ -5,8 +5,8 @@ from llm import embeddings
 from constant import COLLECTION_TUTU_NAME, PARTITION_CLIENTELE_NAME
 
 
-# 数据库中插入数据
 def insert_clientele(client: ClienteleDTO) -> ClienteleDTO:
+    """将客户信息插入到数据库中"""
     client_dict = client.model_dump()
     with Session() as session:
         clientele_table = Table(
@@ -21,16 +21,11 @@ def insert_clientele(client: ClienteleDTO) -> ClienteleDTO:
     return client
 
 
-# 在向量数据库中插入数据
 async def insert_vector_clientele(client: ClienteleDTO):
+    """将客户信息添加到向量数据库中"""
     from components.store import get_vector_store
     vector_store = get_vector_store()
-    vector_text = f"""
-        客户姓名：{client.name};
-        客户性别：{'男性' if client.gender == 'male' else '女性'};
-        客户年龄：{client.age};
-    """
-    vector = embeddings.embed_query(vector_text)
+    vector = embeddings.embed_query(client.name)
     row = {
         'vector': vector,
         'id': str(uuid4()),

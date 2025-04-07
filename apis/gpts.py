@@ -35,7 +35,7 @@ async def insert_inventory(body: InventoryDTO):
 @gpts_router.post('/add_clientele')
 async def insert_clientele_request(body: ClienteleDTO):
     try:
-        # todo 需要加上去重逻辑，此处先不处理
+        # todo 校验逻辑暂时不处理
         client = insert_clientele(body)
         # 将数据添加到向量数据库中
         await insert_vector_clientele(client)

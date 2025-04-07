@@ -48,7 +48,7 @@ async def receipt_agent_request(user_id:str, thread_id: str, body: ChatRequestBo
     result = receipt_agent.invoke(input=ReceiptState(messages=[HumanMessage(content=body.input)]), config=config)
     return {
         'success': True,
-        'result': result
+        'result': result['result']
     }
 
 # 流式响应接口

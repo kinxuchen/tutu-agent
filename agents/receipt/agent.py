@@ -30,10 +30,9 @@ class ReceiptState(BaseModel):
 receipt_graph = StateGraph(ReceiptState)
 
 
-# 初始化节点
-def init_receipt_node(state: ReceiptState):
+def analyze_receipt_node(state: ReceiptState):
+    """解析用户的输入，提取出客户信息和库存信息的结构"""
     last_message = state.messages[-1]
-    # todo 默认的 SemanticSimilarityExampleSelector 选择器没相似度阈值过滤，需要重写
     structured_llm = llm.with_structured_output(
         schema=GoodsResults,
         method='function_calling'
@@ -47,13 +46,19 @@ def init_receipt_node(state: ReceiptState):
     }
 
 
-# 根据提示词解析出的结果，去向量数据库中查询, 如果没有解析出相关的信息。则返回空
-def continue_goods_node(state: ReceiptState):
+def condition_goods_node(state: ReceiptState):
+    """
+    根据提示词解析出的结果，去向量数据库中查询, 如果没有解析出相关的信息。则返回空
+    """
     return 'vector_search_node' if state.goods is not None else 'error_node'
 
 
-# 向量检索
 def vector_search_node(state: ReceiptState):
+    """
+    从 LLM 结构化用户输入后，从 zilliz cloud 中获取用户输入
+    :param state:
+    :return:
+    """
     vector_store = get_vector_store()
     # 搜索结果，先过滤是否存在商品名称，客户信息可以是空的。
     search_data = [
@@ -71,14 +76,14 @@ def vector_search_node(state: ReceiptState):
                     "params": {
                         'radius': 0.7,
                         'level': 5,
-                        'radius_filter': 1,
+                        'range_filter': 1,
                         'enable_recall_calculation': True
                     }
                 }
             ),
             'clientele_result': [] if (good.clientele is None or good.clientele == '') else vector_store.search(
                 data=[embeddings.embed_query(
-                    f"""客户信息: {good.clientele}"""
+                    f"""{good.clientele}"""
                 )],
                 collection_name=COLLECTION_TUTU_NAME,
                 anns_field='vector',  # 需要查询的字段
@@ -87,9 +92,9 @@ def vector_search_node(state: ReceiptState):
                 output_fields=['id', 'db_id', 'metadata'],
                 search_params={
                     "params": {
-                        'radius': 0.3,
+                        'radius': 0.7,
                         'level': 5,
-                        'radius_filter': 1,
+                        'range_filter': 1,
                         'enable_recall_calculation': True
                     }
                 }
@@ -102,16 +107,22 @@ def vector_search_node(state: ReceiptState):
     return {
         'result': list(
             map(lambda x: {
-                'name': x['name'] if len(x['sku_result']) == 0 else x['sku_result'][0][0]['entity']['metadata']['name'],
+                'name': None if len(x['sku_result']) == 0 else x['sku_result'][0][0]['entity']['metadata']['name'],
                 'good_id': None if len(x['sku_result']) == 0 else x['sku_result'][0][0]['entity']['metadata']['id'],
-                'color': x['color'] if len(x['sku_result']) == 0 else x['sku_result'][0][0]['entity']['metadata']['color'],
-                'clientele': x['clientele'] if len(x['clientele_result']) == 0 else x['clientele_result'][0][0]['entity']['metadata']['name'],
-                'clientele_id': x['clientele'] if len(x['clientele_result']) == 0 else x['clientele_result'][0][0]['entity']['metadata']['id'],
+                'color': None if len(x['sku_result']) == 0 else x['sku_result'][0][0]['entity']['metadata']['color'],
+                'clientele': None if len(x['clientele_result']) == 0 else x['clientele_result'][0][0]['entity']['metadata']['name'],
+                'clientele_id': None if len(x['clientele_result']) == 0 else x['clientele_result'][0][0]['entity']['metadata']['id'],
             }, search_data)
         )
     }
 
-
+def condition_base_info_node(state: ReceiptState):
+    """
+    判断是否从向量数据库中获取数据
+    :param state: ReceiptState
+    :return: state ReceiptState
+    """
+    pass
 # 执行错误的节点
 def error_node(state: ReceiptState):
     return {
@@ -120,13 +131,13 @@ def error_node(state: ReceiptState):
 
 
 
-receipt_graph.add_node('init_receipt_node', init_receipt_node)
-receipt_graph.add_node('continue_goods_node', continue_goods_node)
+receipt_graph.add_node('init_receipt_node', analyze_receipt_node)
+receipt_graph.add_node('continue_goods_node', condition_goods_node)
 receipt_graph.add_node('vector_search_node', vector_search_node)
 receipt_graph.add_node('error_node', error_node)
 
 receipt_graph.add_edge(START, 'init_receipt_node')
-receipt_graph.add_conditional_edges('init_receipt_node', continue_goods_node, {
+receipt_graph.add_conditional_edges('init_receipt_node', condition_goods_node, {
     'vector_search_node': 'vector_search_node',
     'error_node': 'error_node'
 })

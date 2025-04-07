@@ -12,7 +12,7 @@ example_selector = SemanticSimilarityExampleSelector(
         "param": {
             "params": {
                 "radius": 0.65,
-                "radius_filter": 1,
+                "range_filter": 1,
                 "level": 5,
                 'enable_recall_calculation': True
             }
