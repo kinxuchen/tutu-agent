@@ -39,12 +39,17 @@ def analyze_receipt_node(state: ReceiptState):
         method='function_calling'
     )
     chain = few_shot_prompt | structured_llm
-    goods = chain.invoke({
-        'input': last_message.content,
-    })
-    return {
-        'goods': goods
-    }
+    try:
+        goods = chain.invoke({
+            'input': last_message.content,
+        })
+        return {
+            'goods': goods
+        }
+    except Exception as e:
+        return {
+            'error_message': str(e)
+        }
 
 
 def condition_goods_node(state: ReceiptState):

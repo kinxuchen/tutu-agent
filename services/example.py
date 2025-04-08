@@ -16,7 +16,6 @@ async def insert_example_into_vector(examples: List[ExampleDTO]):
         id = str(uuid4())
         ids.append(id)
         metadatas.append({
-            'id': id,
             'user_id': '123',
             'input': example['input'],
             'output': example['output'],

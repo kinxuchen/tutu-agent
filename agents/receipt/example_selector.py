@@ -9,13 +9,9 @@ example_selector = SemanticSimilarityExampleSelector(
     input_keys=['input'],  # 根据 input_keys 查找相似度
     example_keys=['input', 'output'],
     vectorstore_kwargs={
+        ## langchain 和 milvus 的实现参数不一致，缺失 s
         "param": {
-            "params": {
-                "radius": 0.65,
-                "range_filter": 1,
-                "level": 5,
-                'enable_recall_calculation': True
-            }
+            "radius": 0.2,
         }
     }
 )

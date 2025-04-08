@@ -6,6 +6,7 @@ ENV = os.getenv('ENV', 'production')
 load_dotenv('.env' if ENV == 'development' else '.env.production')
 
 MODEL_NAME=os.getenv('MODEL_NAME')
+print('模型名称', MODEL_NAME)
 API_KEY=os.getenv('API_KEY')
 BASE_URL=os.getenv('BASE_URL')
 
