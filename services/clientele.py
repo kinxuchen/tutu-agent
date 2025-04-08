@@ -1,23 +1,22 @@
 from dto.inventory_dto import ClienteleDTO
 from uuid import uuid4
-from components.db import engine, metadata, Table,insert, Session
+from components.db import Session
 from llm import embeddings
 from constant import COLLECTION_TUTU_NAME, PARTITION_CLIENTELE_NAME
+from entity.clientele import Clientele, GenderEnum
 
 
 def insert_clientele(client: ClienteleDTO) -> ClienteleDTO:
     """将客户信息插入到数据库中"""
     client_dict = client.model_dump()
     with Session() as session:
-        clientele_table = Table(
-            'clients',
-            metadata,
-            autoload_with=engine
-        )
         client.id = str(uuid4())
+        gender_enum = GenderEnum(client_dict['gender'])
         client_dict['id'] = client.id
-        insert_stmt = insert(clientele_table).values(client_dict)
-        session.execute(insert_stmt)
+        client_dict['gender'] = gender_enum
+        new_client = Clientele(**client_dict)
+        session.add(new_client)
+        session.commit()
     return client
 
 

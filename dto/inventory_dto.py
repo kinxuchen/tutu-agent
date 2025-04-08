@@ -12,6 +12,7 @@ class InventoryDTO(BaseModel):
     unit: str = Field(description="单位")
     alias_name: Optional[str] = Field(description="商品别名", default=None)
 
+
 # 客户信息
 class ClienteleDTO(BaseModel):
     id: str = Field(description="客户id", default=None)

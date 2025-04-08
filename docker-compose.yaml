@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  tutu:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: tutu
+    ports:
+      - "8003:8001"
+    env_file:
+      - .env.production
+    depends_on:
+      - tutu-redis
+      - tutu-mysql
+    networks:
+      - app-network
+
+  tutu-mysql:
+    image: mysql:latest
+    container_name: tutu-mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=123456
+      - MYSQL_DATABASE=learn_core
+    ports:
+      - "3305:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+    networks:
+      - app-network
+
+  tutu-redis:
+    image: redis/redis-stack:latest
+    container_name: tutu-radis
+    ports:
+      - "6378:6379"
+    networks:
+      - app-network
+
+volumes:
+  mysql_data:
+
+networks:
+  app-network:
+    driver: bridge
+

@@ -1,8 +1,9 @@
-from components.db import  metadata, Table, engine, insert, Session
+from components.db import Session
 from uuid import uuid4
 from dto.inventory_dto import InventoryDTO
 from constant import COLLECTION_TUTU_NAME, PARTITION_STORE_NAME
 from llm import embeddings
+from entity.inventory import Inventory
 
 
 # 检查表并创建向量数据库
@@ -12,14 +13,10 @@ def insert_inventory(request: InventoryDTO):
     primary_key = str(uuid4())
     request.id = primary_key
     with Session() as session:
-        inventory_table = Table(
-            'inventory',
-            metadata,
-            autoload_with=engine
-        )
         request_dict['id'] = primary_key
-        insert_stmt = insert(inventory_table).values(request_dict)
-        session.execute(insert_stmt)
+        new_inventory = Inventory(**request_dict)
+        session.add(new_inventory)
+        session.commit()
     return request
 
 

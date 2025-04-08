@@ -1,5 +1,5 @@
 [project]
-name = "yangzhou-llm"
+name = "yangzhou_llm"
 version = "0.1.0"
 description = ""
 authors = [
@@ -26,7 +26,8 @@ dependencies = [
     "cryptography (>=44.0.2,<45.0.0)"
 ]
 
-
+[tool.poetry]
+package-mode = false
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"

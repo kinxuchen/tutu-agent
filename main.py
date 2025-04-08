@@ -23,8 +23,15 @@ async def startup():
     init_db()
     Agent()
 
+@app.get('/')
+async def root():
+    return {"message": "Hello World"}
 # 插入数据
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host='127.0.0.1', port=8002)
+    import os
+
+    host = os.getenv("HOST", "0.0.0.0")
+    port = int(os.getenv("PORT", 8002))
+    uvicorn.run(app, host=host, port=port)
