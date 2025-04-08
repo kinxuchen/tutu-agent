@@ -5,7 +5,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: registry.cn-hangzhou.aliyuncs.com/xuchen327/tutu:0.0.2
+    platform: linux/arm64
+    image: registry.cn-hangzhou.aliyuncs.com/xuchen327/tutu-public:0.0.1
     container_name: tutu
     ports:
       - "8003:8001"
