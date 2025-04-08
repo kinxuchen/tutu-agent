@@ -2010,6 +2010,24 @@ toml = ["tomli (>=2.0.1)"]
 yaml = ["pyyaml (>=6.0.1)"]
 
 [[package]]
+name = "pydash"
+version = "8.0.5"
+description = "The kitchen sink of Python utility libraries for doing \"stuff\" in a functional way. Based on the Lo-Dash Javascript library."
+optional = false
+python-versions = ">=3.8"
+groups = ["main"]
+files = [
+    {file = "pydash-8.0.5-py3-none-any.whl", hash = "sha256:b2625f8981862e19911daa07f80ed47b315ce20d9b5eb57aaf97aaf570c3892f"},
+    {file = "pydash-8.0.5.tar.gz", hash = "sha256:7cc44ebfe5d362f4f5f06c74c8684143c5ac481376b059ff02570705523f9e2e"},
+]
+
+[package.dependencies]
+typing-extensions = ">3.10,<4.6.0 || >4.6.0"
+
+[package.extras]
+dev = ["build", "coverage", "furo", "invoke", "mypy", "pytest", "pytest-cov", "pytest-mypy-testing", "ruff", "sphinx", "sphinx-autodoc-typehints", "tox", "twine", "wheel"]
+
+[[package]]
 name = "pymilvus"
 version = "2.5.6"
 description = "Python Sdk for Milvus"
@@ -3096,4 +3114,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.13,<4.0"
-content-hash = "be27c7a5d8396419cc219ede9daf2717b6d2f8a0d6c475abd905ea8dd6d8ea06"
+content-hash = "637a0dd749e33617d3586b44c4819d078803b1b0eaac4c42fcd9efd223e0ec7b"

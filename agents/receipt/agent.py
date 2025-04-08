@@ -6,14 +6,15 @@ from llm import llm, embeddings
 from constant import COLLECTION_TUTU_NAME, PARTITION_STORE_NAME, PARTITION_CLIENTELE_NAME
 from typing import Annotated, List, Dict, Any
 from agents.receipt.example_selector import few_shot_prompt
+from pydash import get
 
 
 # 维护基准的客户信息
 class GoodResult(BaseModel):
-    name: str = Field(description='商品名称')
-    color: str = Field(description='颜色')
-    count: int = Field(description='数量')
-    clientele: str = Field(description='客户信息')
+    name: str = Field(description='商品名称,解析不出可以为空')
+    color: str = Field(description='颜色,解析不出可以为空')
+    count: int = Field(description='数量,解析不出可以为空')
+    clientele: str = Field(description='客户信息,解析不出可以为空')
 
 
 class GoodsResults(BaseModel):
@@ -61,60 +62,65 @@ def vector_search_node(state: ReceiptState):
     """
     vector_store = get_vector_store()
     # 搜索结果，先过滤是否存在商品名称，客户信息可以是空的。
-    search_data = [
-        {
-            'sku_result': vector_store.search(
-                data=[embeddings.embed_query(
-                    f"""商品名称: {good.name}\n商品颜色: {good.color}"""
-                )],
-                collection_name=COLLECTION_TUTU_NAME,
-                anns_field='vector',  # 需要查询的字段
-                partition_names=[PARTITION_STORE_NAME],
-                limit=1,
-                output_fields=['id', 'db_id', 'metadata'],
-                search_params={
-                    "params": {
-                        'radius': 0.7,
-                        'level': 5,
-                        'range_filter': 1,
-                        'enable_recall_calculation': True
+    try:
+        search_data = [
+            {
+                'sku_result': vector_store.search(
+                    data=[embeddings.embed_query(
+                        f"""商品名称: {good.name}\n商品颜色: {good.color}"""
+                    )],
+                    collection_name=COLLECTION_TUTU_NAME,
+                    anns_field='vector',  # 需要查询的字段
+                    partition_names=[PARTITION_STORE_NAME],
+                    limit=1,
+                    output_fields=['id', 'db_id', 'metadata'],
+                    search_params={
+                        "params": {
+                            'radius': 0.7,
+                            'level': 5,
+                            'range_filter': 1,
+                            'enable_recall_calculation': True
+                        }
                     }
-                }
-            ),
-            'clientele_result': [] if (good.clientele is None or good.clientele == '') else vector_store.search(
-                data=[embeddings.embed_query(
-                    f"""{good.clientele}"""
-                )],
-                collection_name=COLLECTION_TUTU_NAME,
-                anns_field='vector',  # 需要查询的字段
-                partition_names=[PARTITION_CLIENTELE_NAME],
-                limit=1,
-                output_fields=['id', 'db_id', 'metadata'],
-                search_params={
-                    "params": {
-                        'radius': 0.7,
-                        'level': 5,
-                        'range_filter': 1,
-                        'enable_recall_calculation': True
+                ),
+                'clientele_result': [] if (good.clientele is None or good.clientele == '') else vector_store.search(
+                    data=[embeddings.embed_query(
+                        f"""{good.clientele}"""
+                    )],
+                    collection_name=COLLECTION_TUTU_NAME,
+                    anns_field='vector',  # 需要查询的字段
+                    partition_names=[PARTITION_CLIENTELE_NAME],
+                    limit=1,
+                    output_fields=['id', 'db_id', 'metadata'],
+                    search_params={
+                        "params": {
+                            'radius': 0.7,
+                            'level': 5,
+                            'enable_recall_calculation': True
+                        }
                     }
-                }
-            ),
-            'name': good.name,
-            'color': good.color,
-            'clientele': good.clientele,
-        } for good in filter(lambda x: x.name is not None, state.goods.goods)
-    ]
-    return {
-        'result': list(
-            map(lambda x: {
-                'name': None if len(x['sku_result']) == 0 else x['sku_result'][0][0]['entity']['metadata']['name'],
-                'good_id': None if len(x['sku_result']) == 0 else x['sku_result'][0][0]['entity']['metadata']['id'],
-                'color': None if len(x['sku_result']) == 0 else x['sku_result'][0][0]['entity']['metadata']['color'],
-                'clientele': None if len(x['clientele_result']) == 0 else x['clientele_result'][0][0]['entity']['metadata']['name'],
-                'clientele_id': None if len(x['clientele_result']) == 0 else x['clientele_result'][0][0]['entity']['metadata']['id'],
-            }, search_data)
-        )
-    }
+                ),
+                'name': good.name,
+                'color': good.color,
+                'clientele': good.clientele,
+            } for good in filter(lambda x: x.name is not None, state.goods.goods)
+        ]
+
+        return {
+            'result': list(
+                map(lambda x: {
+                    'name': None if len(x['sku_result']) == 0 else get(x, ['sku_result', 0, 0, 'entity', 'metadata', 'name'], default=None),
+                    'good_id': None if len(x['sku_result']) == 0 else get(x, ['sku_result', 0, 0, 'entity', 'metadata', 'id'], default=None),
+                    'color': None if len(x['sku_result']) == 0 else get(x, ['sku_result', 0, 0, 'entity', 'metadata', 'color'], default=None),
+                    'clientele': None if len(x['clientele_result']) == 0 else get(x, ['clientele_result', 0, 0, 'entity', 'metadata', 'name'], default=None),
+                    'clientele_id': None if len(x['clientele_result']) == 0 else get(x, ['clientele_result', 0, 0, 'entity', 'metadata', 'id'], default=None),
+                }, search_data)
+            )
+        }
+    except Exception as e:
+        return {
+            'error_message': str(e)
+        }
 
 def condition_base_info_node(state: ReceiptState):
     """

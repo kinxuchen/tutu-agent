@@ -7,6 +7,7 @@ RUN pip install poetry
 COPY ./poetry.lock ./pyproject.toml ./pyproject.toml ./main.py ./llm.py ./constant.py ./.env ./
 COPY ./agents ./agents/
 COPY ./apis ./apis/
+COPY ./entity ./entity/
 COPY ./checkpointer ./checkpointer/
 COPY ./components ./components/
 COPY ./dto ./dto/
