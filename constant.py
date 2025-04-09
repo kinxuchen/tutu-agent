@@ -3,7 +3,9 @@ import os
 from langchain_community.utilities.sql_database import SQLDatabase
 
 ENV = os.getenv('ENV', 'production')
-load_dotenv('.env' if ENV == 'development' else '.env.production')
+# load_dotenv('.env' if ENV == 'development' else '.env.production')
+if ENV == 'development':
+    load_dotenv('.env')
 
 MODEL_NAME=os.getenv('MODEL_NAME')
 print('模型名称', MODEL_NAME)

@@ -6,8 +6,16 @@ from llm import llm, embeddings
 from constant import COLLECTION_TUTU_NAME, PARTITION_STORE_NAME, PARTITION_CLIENTELE_NAME
 from typing import Annotated, List, Dict, Any
 from agents.receipt.example_selector import few_shot_prompt
-from pydash import get
+from checkpointer.RedisCheckpointerSaver import RedisCheckpointSaver
+from constant import REDIS_DB, REDIS_PORT, REDIS_HOST
+from redis.asyncio import Redis as RedisAsync
+from redis import Redis
+from pydash import get, every
 
+redis_async = RedisAsync(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB)
+redis = Redis(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB)
+
+redisCheckpointerSaver = RedisCheckpointSaver(redis_async, redis, 'main_agent')
 
 # 维护基准的客户信息
 class GoodResult(BaseModel):
@@ -108,6 +116,7 @@ def vector_search_node(state: ReceiptState):
                 'name': good.name,
                 'color': good.color,
                 'clientele': good.clientele,
+                'count': good.count
             } for good in filter(lambda x: x.name is not None, state.goods.goods)
         ]
 
@@ -119,6 +128,7 @@ def vector_search_node(state: ReceiptState):
                     'color': None if len(x['sku_result']) == 0 else get(x, ['sku_result', 0, 0, 'entity', 'metadata', 'color'], default=None),
                     'clientele': None if len(x['clientele_result']) == 0 else get(x, ['clientele_result', 0, 0, 'entity', 'metadata', 'name'], default=None),
                     'clientele_id': None if len(x['clientele_result']) == 0 else get(x, ['clientele_result', 0, 0, 'entity', 'metadata', 'id'], default=None),
+                    'count': get(x, ['count'], 0)
                 }, search_data)
             )
         }
@@ -128,8 +138,15 @@ def vector_search_node(state: ReceiptState):
         }
 
 def condition_base_info_node(state: ReceiptState):
+    result = state['result']
+    # 客户输入缺少商品信息
+    is_not_good = every(result, lambda x: get(x, ['clientele_id']) is not None)
     """
-    判断是否从向量数据库中获取数据
+    客户信息需要记录下业务场景。比如下面这种情况：
+    张三羊毛 5 件；李四川貂 4 件。客户信息中存在张三，不存在李四。
+    """
+    """
+    对基本信息缺失进行调整
     :param state: ReceiptState
     :return: state ReceiptState
     """
@@ -156,4 +173,6 @@ receipt_graph.add_edge('init_receipt_node', END)
 receipt_graph.add_edge('error_node', END)
 receipt_graph.add_edge('vector_search_node', END)
 
-receipt_agent = receipt_graph.compile()
+receipt_agent = receipt_graph.compile(
+    checkpointer=redisCheckpointerSaver
+)
