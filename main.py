@@ -1,10 +1,12 @@
 from fastapi import FastAPI
 from langgraph.graph.state import CompiledStateGraph
-from components.db import init_db
-from components.store import initial_vector_collection
+from components.db import init_db, close_db
+from components.store import initial_vector_collection, close_vector_store
 from agents.agent import Agent
 from apis.gpts import gpts_router
 from apis.agent import agent_router
+from contextlib import asynccontextmanager
+
 
 redis = None
 redis_async = None
@@ -15,13 +17,17 @@ app = FastAPI()
 app.include_router(gpts_router)
 app.include_router(agent_router)
 
-
 # 启动服务连接 Redis 和创建智能体
-@app.on_event('startup')
-async def startup():
+@asynccontextmanager
+async def lifespan(app: FastAPI):
     initial_vector_collection()
     init_db()
     Agent()
+    yield
+    close_vector_store()
+    close_db()
+    
+
 
 @app.get('/')
 async def root():

@@ -22,6 +22,13 @@ def get_vector_store():
             )
     return _milvus_client
 
+# 关闭向量数据库
+def close_vector_store():
+    with lock:
+        global _milvus_client
+        if _milvus_client is not None:
+            _milvus_client.close()
+            _milvus_client = None
 
 # 初始化向量数据库
 def initial_vector_collection():

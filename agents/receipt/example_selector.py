@@ -36,11 +36,14 @@ few_shot_prompt = FewShotPromptTemplate(
     example_selector=example_selector,
     prefix="接下来我会提供一些示例，示例可能为空",
     suffix="""
-        请根据所提供的示例，并且结合示例给出输出。
+        请根据所提供的示例，提取对应的数据结构，并选择对应的工具调用
         下面是用户的输入:{input}
         ## 注意
         - 如果没有相关示例，请返回空。只有存在示例的情况下，你才会思考用户的输入
         - 如果解析不出内容，可以返回空
+        
+        你可以使用下面这些工具
+        {tool_names}
     """,
     input_variables=['input'],
     example_separator="\n\n\n",

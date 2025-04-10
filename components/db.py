@@ -18,3 +18,6 @@ Session: sessionmaker = sessionmaker(bind=engine, autoflush=True)
 def init_db():
     Base.metadata.create_all(bind=engine)
 
+def close_db():
+    if engine is not None:
+        engine.dispose()

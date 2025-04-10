@@ -1,9 +1,12 @@
-from dto.chat_request_dto import ChatRequestBody
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from agents.agent import Agent
+from dto.chat_request_dto import ChatRequestBody
 from langchain_core.messages import HumanMessage
+from langgraph.types import Command
 import traceback
 from agents.receipt.agent import receipt_agent, ReceiptState
+from agents.test_agent import graph as test_agent
+from pydash import has, get
 
 agent_router = APIRouter(prefix="/agent")
 
@@ -42,14 +45,61 @@ async def receipt_agent_request(user_id:str, thread_id: str, body: ChatRequestBo
     config = {
         'configurable': {
             'thread_id': thread_id,
-            'user_id': user_id,
+            "user_id": user_id
         }
     }
-    result = receipt_agent.invoke(input=ReceiptState(messages=[HumanMessage(content=body.input)]), config=config)
-    return {
-        'success': True,
-        'result': result['result']
+    agent_state = receipt_agent.get_state(config=config)
+    is_recover = has(agent_state, ['tasks', 0])
+    agent_result = None
+    # 中断恢复执行
+    if is_recover:
+        agent_result = receipt_agent.invoke(
+            input=Command(
+                resume=body.input
+            ),
+            config=config
+        )
+    else:
+        agent_result = receipt_agent.invoke(input={
+            'messages': [HumanMessage(content=body.input)]
+        }, config=config)
+
+    state = receipt_agent.get_state(config=config)
+    is_recover = has(state, ['tasks', 0])
+    # 执行完成判断是否是中断
+    if is_recover:
+        resume_text = get(state, ['tasks', 0, 'interrupts', 0, 'value', 'text'])
+        return {
+            'success': True,
+            'is_resuming': True,
+            'message': resume_text
+        }
+    else:
+        if agent_result.get('error_message'):
+            return {
+                'success': False,
+                'message': agent_result.get('error_message')
+            }
+        return {
+            'success': True,
+            'data': agent_result.get('result', ) 
+        }
+        
+@agent_router.post('/test_agent/{thread_id}')
+async def test_agent_request(thread_id: str, body: ChatRequestBody):
+    config = {
+        'configurable': {
+            'thread_id': thread_id
+        }
     }
+    result = test_agent.invoke(input={
+        'some_text': body.input
+    }, config=config)
+
+    return {
+        'success': True
+    }
+
 
 # 流式响应接口
 # 需要考虑，单据接口是否需要保存历史记录？
