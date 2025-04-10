@@ -64,7 +64,8 @@ def vector_search_node(state: ReceiptState):
     retry += 1
     return {
         'messages': messages,
-        'retry': retry
+        'retry': retry,
+        'error_message': None
     }
 
 def condintion_tool_call(state: ReceiptState):
@@ -225,7 +226,10 @@ def insert_clientele_node(state: ReceiptState):
 # 失败节点
 def error_node(state: ReceiptState):
     return {
-        'error_message': '智能体调用失败'
+        'error_message': '智能体调用失败',
+        'human_retry': 0,
+        'retry': 0,
+        'messages': [],
     }
 
 receipt_graph.add_node('vector_search_node', vector_search_node)
@@ -244,7 +248,7 @@ receipt_graph.add_conditional_edges('vector_search_node', condintion_tool_call, 
     'tool_call': 'tool_call_node',
     'human': 'human_node',
     'vector_search': 'vector_search_node',
-    'error_node': 'error_node'
+    'error': 'error_node'
 })
 # 工具节点调用后判断
 receipt_graph.add_conditional_edges('tool_call_node', condition_tool_node, {
