@@ -7,7 +7,7 @@ from agents.receipt.tools import vecotr_search, clientele_vector_search
 from agents.receipt.receipt_dto import GoodsResults
 from agents.receipt.prompte import clientele_search_prompt
 from llm import llm
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Union, Literal
 from constant import COLLECTION_TUTU_NAME, PARTITION_CLIENTELE_NAME
 from components.store import get_vector_store
 from agents.receipt.example_selector import few_shot_prompt
@@ -38,8 +38,8 @@ redisCheckpointerSaver = RedisCheckpointSaver(redis_async, redis, 'main_agent')
 class ReceiptState(BaseModel):
     messages: List[BaseMessage]  # 消息列表
     resume_type: int = Field(description='中断类型', default=0) # 0 全部出错 1 客户信息缺失
-    result: List[Dict[str, Any]] = Field(description='最终结果', default={})
-    error_message: str = Field(description='错误信息', default=None)
+    result: Union[List[Dict[str, Any]], None] = Field(description='最终结果', default=None)
+    error_message: Union[str, None] = Field(description='错误信息', default=None)
     # 搜索重试次数
     retry: int = Field(description='重试次数', default=0)
     human_retry: int = Field(description='人工重试次数', default=0)

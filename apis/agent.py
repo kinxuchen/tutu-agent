@@ -49,10 +49,10 @@ async def receipt_agent_request(user_id:str, thread_id: str, body: ChatRequestBo
         }
     }
     agent_state = receipt_agent.get_state(config=config)
-    is_recover = has(agent_state, ['tasks', 0])
+    is_resume = has(agent_state, ['tasks', 0])
     agent_result = None
     # 中断恢复执行
-    if is_recover:
+    if is_resume:
         agent_result = receipt_agent.invoke(
             input=Command(
                 resume=body.input
@@ -60,8 +60,14 @@ async def receipt_agent_request(user_id:str, thread_id: str, body: ChatRequestBo
             config=config
         )
     else:
+        # 第一次输入，需要初始化状态
         agent_result = receipt_agent.invoke(input={
-            'messages': [HumanMessage(content=body.input)]
+            'messages': [HumanMessage(content=body.input)],
+            'result': None,
+            'resume_type': 0,
+            'error_message': None,
+            'retry': 0,
+            'human_retry': 0
         }, config=config)
 
     state = receipt_agent.get_state(config=config)
