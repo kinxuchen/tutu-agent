@@ -244,7 +244,7 @@ receipt_graph.add_conditional_edges('vector_search_node', condintion_tool_call, 
     'tool_call': 'tool_call_node',
     'human': 'human_node',
     'vector_search': 'vector_search_node',
-    'error_node': 'error_node'
+    'error': 'error_node'
 })
 # 工具节点调用后判断
 receipt_graph.add_conditional_edges('tool_call_node', condition_tool_node, {
