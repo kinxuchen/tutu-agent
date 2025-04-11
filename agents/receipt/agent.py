@@ -138,14 +138,12 @@ def tool_summary_node(state: ReceiptState):
     tool_result = jsonpickle.decode(last_message.content)
     is_miss_client = some(tool_result, lambda x: x['clientele_id'] is None)
     if is_miss_client:
-        clientele_id = None
-        clientele = None
         first_clientele = list(filter(lambda x: x['clientele_id'] is not None, tool_result))[0]
         for x in tool_result:
-            if not x.clientele_id and not x.clientele:
-                clientele_id = first_clientele['clientele_id']
-                clientele = x['clientele']
-    return {
+            if get(x, 'clientele_id', None) is None and get(x, 'clientele', None) is None:
+                x['clientele_id'] = first_clientele['clientele_id']
+                x['clientele'] = first_clientele['clientele']
+    return {    
         'result': tool_result
     }
 
