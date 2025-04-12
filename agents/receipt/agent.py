@@ -7,7 +7,7 @@ from agents.receipt.tools import vecotr_search, clientele_vector_search
 from agents.receipt.receipt_dto import GoodsResults
 from agents.receipt.prompte import clientele_search_prompt
 from llm import llm
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Union, Literal
 from constant import COLLECTION_TUTU_NAME, PARTITION_CLIENTELE_NAME
 from components.store import get_vector_store
 from agents.receipt.example_selector import few_shot_prompt
@@ -38,8 +38,8 @@ redisCheckpointerSaver = RedisCheckpointSaver(redis_async, redis, 'main_agent')
 class ReceiptState(BaseModel):
     messages: List[BaseMessage]  # 消息列表
     resume_type: int = Field(description='中断类型', default=0) # 0 全部出错 1 客户信息缺失
-    result: List[Dict[str, Any]] = Field(description='最终结果', default={})
-    error_message: str = Field(description='错误信息', default=None)
+    result: Union[List[Dict[str, Any]], None] = Field(description='最终结果', default=None)
+    error_message: Union[str, None] = Field(description='错误信息', default=None)
     # 搜索重试次数
     retry: int = Field(description='重试次数', default=0)
     human_retry: int = Field(description='人工重试次数', default=0)
@@ -139,14 +139,12 @@ def tool_summary_node(state: ReceiptState):
     tool_result = jsonpickle.decode(last_message.content)
     is_miss_client = some(tool_result, lambda x: x['clientele_id'] is None)
     if is_miss_client:
-        clientele_id = None
-        clientele = None
         first_clientele = list(filter(lambda x: x['clientele_id'] is not None, tool_result))[0]
         for x in tool_result:
-            if not x.clientele_id and not x.clientele:
-                clientele_id = first_clientele['clientele_id']
-                clientele = x['clientele']
-    return {
+            if get(x, 'clientele_id', None) is None and get(x, 'clientele', None) is None:
+                x['clientele_id'] = first_clientele['clientele_id']
+                x['clientele'] = first_clientele['clientele']
+    return {    
         'result': tool_result
     }
 
