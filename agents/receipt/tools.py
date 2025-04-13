@@ -102,3 +102,4 @@ def clientele_vector_search(clientele_name: str):
         'clientele_id': get(clientele, [0, 0, 'entity', 'metadata', 'id']),
         'clientele': get(clientele, [0, 0, 'entity', 'metadata', 'name']),
     }
+

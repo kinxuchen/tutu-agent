@@ -5,6 +5,7 @@ from components.store import initial_vector_collection, close_vector_store
 from agents.agent import Agent
 from apis.gpts import gpts_router
 from apis.agent import agent_router
+from apis.tools import tool_router
 from contextlib import asynccontextmanager
 
 
@@ -16,6 +17,7 @@ app = FastAPI()
 
 app.include_router(gpts_router)
 app.include_router(agent_router)
+app.include_router(tool_router)
 
 # 启动服务连接 Redis 和创建智能体
 @asynccontextmanager
@@ -26,7 +28,7 @@ async def lifespan(app: FastAPI):
     yield
     close_vector_store()
     close_db()
-    
+
 
 
 @app.get('/')

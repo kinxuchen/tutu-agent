@@ -67,7 +67,8 @@ async def receipt_agent_request(user_id:str, thread_id: str, body: ChatRequestBo
             'resume_type': 0,
             'error_message': None,
             'retry': 0,
-            'human_retry': 0
+            'human_retry': 0,
+            'image_urls': body.image_urls
         }, config=config)
 
     state = receipt_agent.get_state(config=config)
@@ -88,9 +89,9 @@ async def receipt_agent_request(user_id:str, thread_id: str, body: ChatRequestBo
             }
         return {
             'success': True,
-            'data': agent_result.get('result', ) 
+            'data': agent_result.get('result', )
         }
-        
+
 @agent_router.post('/test_agent/{thread_id}')
 async def test_agent_request(thread_id: str, body: ChatRequestBody):
     config = {
