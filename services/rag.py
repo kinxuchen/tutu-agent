@@ -20,7 +20,7 @@ async def reader_markdown_content(files: List[UploadFile]):
             if not file_name.endswith('.md'):
                 continue
             file_content = await file.read()
-            with tempfile.NamedTemporaryFile(delete=False, mode='wb', suffix='.md') as temp_file:
+            with tempfile.NamedTemporaryFile(delete=True, mode='wb', suffix='.md') as temp_file:
                 temp_file.write(file_content)
                 temp_file.flush()
                 temp_file_path = temp_file.name
@@ -35,10 +35,6 @@ async def reader_markdown_content(files: List[UploadFile]):
                 milvus_vector_rag_store.add_documents(documents=documents)
     except Exception as e:
         return []
-    finally:
-        for file_path in file_paths:
-            os.remove(file_path)
-
 
 async def query_knowledge_server(input: str):
     retriever = milvus_vector_rag_store.as_retriever()
