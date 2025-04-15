@@ -14,7 +14,6 @@ async def reader_markdown_content(files: List[UploadFile]):
         chunk_overlap=10
     )
     try:
-        file_paths = []
         for file in files:
             file_name = file.filename
             if not file_name.endswith('.md'):
@@ -24,7 +23,6 @@ async def reader_markdown_content(files: List[UploadFile]):
                 temp_file.write(file_content)
                 temp_file.flush()
                 temp_file_path = temp_file.name
-                file_paths.append(temp_file_path)
                 loader = UnstructuredMarkdownLoader(
                     file_path=temp_file_path,
                     mode='single',
