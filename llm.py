@@ -27,7 +27,6 @@ image_llm = ChatOpenAI(
     model=IMAGE_MODEL,
     api_key=IMAGE_API_KEY,
     base_url=IMAGE_BASE_URL,
-    max_tokens=1024 * 10,
     max_retries=3
 )
 

@@ -1,7 +1,17 @@
 from pymilvus import MilvusClient, DataType
 import threading
-from constant import MILVUS_HOST, MILVUS_TOKEN, MILVUS_USER, MILVUS_PASSWORD, COLLECTION_TUTU_NAME, \
-    PARTITION_STORE_NAME, PARTITION_CLIENTELE_NAME, PARTITION_EXAMPLE_NAME, COLLECTION_EXAMPLE_NAME
+from constant import (
+    MILVUS_HOST,
+    MILVUS_TOKEN,
+    MILVUS_USER,
+    MILVUS_PASSWORD,
+    COLLECTION_TUTU_NAME,
+    PARTITION_STORE_NAME,
+    PARTITION_CLIENTELE_NAME,
+    PARTITION_EXAMPLE_NAME,
+    COLLECTION_EXAMPLE_NAME,
+    COLLECTION_RAG_NAME
+)
 from llm import embeddings
 from langchain_milvus import Zilliz
 
@@ -132,7 +142,7 @@ def initial_vector_collection():
             partition_name=PARTITION_EXAMPLE_NAME
         )
 
-# 使用 Zilliz 连接数据库
+# 使用 Zilliz 连接示例数据库
 milvus_vector_store = Zilliz(
     collection_name=COLLECTION_EXAMPLE_NAME,
     embedding_function=embeddings,
@@ -154,3 +164,17 @@ milvus_vector_store = Zilliz(
     }]
 )
 
+milvus_vector_rag_store = Zilliz(
+    collection_name=COLLECTION_RAG_NAME,
+    embedding_function=embeddings,
+    consistency_level="Session", # 一致性
+    auto_id=True,
+    vector_field="vector",
+    text_field="text",
+    connection_args={
+        'uri': MILVUS_HOST,
+        'token': MILVUS_TOKEN,
+        'user': MILVUS_USER,
+        'password': MILVUS_PASSWORD
+    },
+)
