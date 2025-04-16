@@ -2,36 +2,32 @@
 from langgraph.graph import StateGraph, START, END
 from pydantic import BaseModel, Field
 from typing import List, Any
-from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage
+from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage, AIMessage
 from llm import image_llm, llm
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-from langchain_core.output_parsers import JsonOutputParser, PydanticOutputParser
+from langchain_core.output_parsers import PydanticOutputParser
+from langchain.output_parsers import RetryOutputParser, OutputFixingParser
 from agents.receipt.receipt_dto import GoodsResults
-from langchain_core.runnables import RunnablePassthrough
-
-json_output = PydanticOutputParser(
-    pydantic_object=GoodsResults
-)
+from langchain_core.runnables import RunnablePassthrough, RunnableParallel, RunnableLambda
 
 
 class ImageReceiptState(BaseModel):
     image_urls: List[str] = Field(description='图片地址', default=None)
     messages: List[BaseMessage] = Field(description='消息列表', default=[])
     result: Any = Field(description='生成单据的结果', default=None)
-
-
 image_receipt_graph = StateGraph(ImageReceiptState)
 
 def vision_images_node(state: ImageReceiptState):
     messages = state.messages
     last_message = messages[-1]
-    parser = JsonOutputParser(pydantic_object=GoodsResults)
+    parser = PydanticOutputParser(pydantic_object=GoodsResults)
     images = [image for image in map(lambda x: {
         'type': 'image_url',
         'image_url': {
             'url': x
         }
     }, state.image_urls)]
+    # 后续输出需要新增对格式判断
     system_template = """
           ## 角色
             你是一名具有丰富经验的商人，你平时和客户交易需要经常使用单据记录一些基本信息。
@@ -50,9 +46,15 @@ def vision_images_node(state: ImageReceiptState):
             - 如果图片是一个表格，在解析商品信息时，你需要忽略表格整体统计的那一行数据，只关心商品对应那一行的数据
             - 如果是表格，你需要找到表格中你解析的商品项对应那一行数据的合计(统计)数据作为总米数。一定要是对应那一行的数据，不要提取非商品行的数据
             - 商品可能存在两种单位，一种是件，一种是米，一件可能对应若干米。如果能够识别，请你尽量提取两种单位，如果没有，以件为基准单位
+            - 输出内容不要有多余内容，请严格按照【输出格式】输出内容
         ## 输出格式
         {format_instructions}
     """
+    fixing_parser = OutputFixingParser.from_llm(
+        llm=llm,
+        parser=parser,
+        max_retries=2
+    )
     chat_messages = ChatPromptTemplate.from_messages([
         ('system', system_template),
         MessagesPlaceholder(variable_name="messages"),
@@ -68,18 +70,22 @@ def vision_images_node(state: ImageReceiptState):
     # 删除最后一条消息，替换成组装成带图的图片
     messages.pop(-1)
     messages.append(human_message)
-    def text(x):
-        print(x)
-        return {}
-    chain = chat_messages | image_llm | parser
+    chain = chat_messages | image_llm | RunnableParallel(
+        json_result=fixing_parser,
+        source=RunnableLambda(lambda x: x)
+    )
     try:
         image_result = chain.invoke({
             'messages': messages
         })
-        messages.append(image_result)
+        ai_message = AIMessage(
+            content=image_result['json_result'].model_dump_json(),
+            id=image_result['source'].id
+        )
+        messages.append(ai_message)
         return {
             'messages': messages,
-            'result': image_result.content
+            'result': image_result['json_result'].model_dump_json()
         }
     except Exception as e:
         print(e)
@@ -88,44 +94,10 @@ def vision_images_node(state: ImageReceiptState):
             'result': None
         }
 
-def goods_node(state: ImageReceiptState):
-    messages = state.messages
-    last_message = messages[-1]
-    human_message = HumanMessage(
-        content="请将提取商品信息"
-    )
-    prompt = ChatPromptTemplate.from_messages([
-        ('system', """
-             ## 角色
-            你是一名具有丰富经验的商人，你平时和客户交易需要经常使用单据记录一些基本信息。
-            # 任务
-            你现在需要尝试在文字中提取以下信息
-            - 商品名称
-            - 商品颜色
-            - 商品件数
-            - 商品米数
-            - 客户信息
-            - 交易金额
-            ## 格式
-            {format_instructions}
-        """),
-        MessagesPlaceholder(variable_name="messages"),
-    ]).partial(format_instructions=json_output.get_format_instructions())
-    chain = prompt | llm | json_output
-    result = chain.invoke({
-        'messages': [last_message, human_message]
-    })
-    messages.append(human_message)
-    messages.append(result)
-    return {
-        'messages': messages
-    }
 
 image_receipt_graph.add_node('vision_images_node', vision_images_node)
-image_receipt_graph.add_node('goods_node', goods_node)
 
 image_receipt_graph.add_edge(START, 'vision_images_node')
-image_receipt_graph.add_edge( 'vision_images_node', 'goods_node')
-image_receipt_graph.add_edge('goods_node', END)
+image_receipt_graph.add_edge('vision_images_node', END)
 
 image_receipt_agent = image_receipt_graph.compile()
