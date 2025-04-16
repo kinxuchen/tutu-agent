@@ -85,7 +85,7 @@ def vision_images_node(state: ImageReceiptState):
         messages.append(ai_message)
         return {
             'messages': messages,
-            'result': image_result['json_result'].model_dump_json()
+            'result': image_result['json_result']
         }
     except Exception as e:
         print(e)
