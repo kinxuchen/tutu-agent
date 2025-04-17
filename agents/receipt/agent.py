@@ -35,6 +35,7 @@ class ReceiptState(BaseModel):
     # 搜索重试次数
     retry: int = Field(description='重试次数', default=0)
     human_retry: int = Field(description='人工重试次数', default=0)
+    is_small: bool = Field(description="是否是细码", default=True)
 
 
 receipt_graph = StateGraph(ReceiptState)

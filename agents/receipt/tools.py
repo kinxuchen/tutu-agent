@@ -1,6 +1,6 @@
 import uuid
 from langchain_core.tools import tool
-from agents.receipt.receipt_dto import GoodResult
+from agents.receipt.receipt_dto import BaseGoodResult
 from typing import List
 from jsonpickle import encode
 from components.store import get_vector_store
@@ -10,7 +10,7 @@ from pydash import get
 from uuid import uuid4
 
 @tool()
-def vecotr_search(order_info: List[GoodResult]):
+def vecotr_search(order_info: List[BaseGoodResult]):
     """
     从向量数据库中提取用户问题中的客户信息和库存信息
     Args:

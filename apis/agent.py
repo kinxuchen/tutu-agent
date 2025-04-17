@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from agents.agent import Agent
-from dto.chat_request_dto import ChatRequestBody
+from dto.chat_request_dto import ReceiptRequestBody
 from langchain_core.messages import HumanMessage
 from langgraph.types import Command
 import traceback
@@ -12,7 +12,7 @@ agent_router = APIRouter(prefix="/agent")
 
 agent_instance = Agent()
 @agent_router.post('/chat/{user_id}/{thread_id}')
-async def chat(user_id: str, thread_id: str, body: ChatRequestBody):
+async def chat(user_id: str, thread_id: str, body: ReceiptRequestBody):
     agent = agent_instance.get_agent()
     if agent is None:
         return {"success": False }
@@ -41,7 +41,7 @@ async def chat(user_id: str, thread_id: str, body: ChatRequestBody):
 
 # 单据接口
 @agent_router.post('/receipt/{user_id}/{thread_id}')
-async def receipt_agent_request(user_id:str, thread_id: str, body: ChatRequestBody):
+async def receipt_agent_request(user_id:str, thread_id: str, body: ReceiptRequestBody):
     config = {
         'configurable': {
             'thread_id': thread_id,
@@ -67,6 +67,7 @@ async def receipt_agent_request(user_id:str, thread_id: str, body: ChatRequestBo
             'resume_type': 0,
             'error_message': None,
             'retry': 0,
+            'is_small': body.is_small,
             'human_retry': 0,
             'image_urls': body.image_urls
         }, config=config)
@@ -93,7 +94,7 @@ async def receipt_agent_request(user_id:str, thread_id: str, body: ChatRequestBo
         }
 
 @agent_router.post('/test_agent/{thread_id}')
-async def test_agent_request(thread_id: str, body: ChatRequestBody):
+async def test_agent_request(thread_id: str, body: ReceiptRequestBody):
     config = {
         'configurable': {
             'thread_id': thread_id
