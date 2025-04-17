@@ -41,12 +41,10 @@ class ReceiptState(BaseModel):
 receipt_graph = StateGraph(ReceiptState)
 
 
-# 处理数据
 def vector_search_node(state: ReceiptState):
-    # todo 将所有人的语言组合起来去输入
+    """向量工具调用"""
     messages = state.messages
     retry = state.retry
-    print(tool_names)
     tool_llm = llm.bind_tools(tools)
     chain = few_shot_prompt | tool_llm
     ai_message = chain.invoke({
@@ -105,12 +103,12 @@ def condition_tool_node(state: ReceiptState):
         return 'human'
 
 def condition_image_node(state: ReceiptState):
-    """判断是否需要工具调用"""
+    """判断是否是图片节点识别"""
     if hasattr(state, 'image_urls') and len(state.image_urls) > 0:
         return 'vision_images_agent'
     return 'default'
-# 工具调用
 def tool_call_node(state: ReceiptState):
+    """工具节点调用"""
     messages = state.messages
     last_message = messages[-1]
     for tool in last_message.tool_calls:
@@ -128,10 +126,11 @@ def tool_call_node(state: ReceiptState):
         'messages': messages
     }
 
-
-
-# 工具总结
 def tool_summary_node(state: ReceiptState):
+    """
+        工具调用后，处理工具函数的结果，
+        此处特指向量检索
+    """
     messages = state.messages
     last_message = messages[-1]
     tool_result = jsonpickle.decode(last_message.content)
@@ -146,8 +145,10 @@ def tool_summary_node(state: ReceiptState):
         'result': tool_result
     }
 
-# 处理缺失客户信息的情况
 def miss_all_clientele_human_pre_node(state: ReceiptState):
+    """
+    处理缺失客户信息的情况
+    """
     messages = state.messages
     last_message = messages[-1]
     result = jsonpickle.decode(last_message.content)
@@ -171,6 +172,7 @@ def human_node(state: ReceiptState):
         content=value
     ))
     human_retry += 1
+    # 全部失败，重新向量处理
     if resume_type == 0:
         return Command(goto='vector_search_node', update={
             'messages': messages,
@@ -187,7 +189,7 @@ def human_node(state: ReceiptState):
         })
 
 def clientele_search_node(state: ReceiptState):
-    """处理客户数据搜索"""
+    """客户信息搜索"""
     tools = [clientele_vector_search]
     messages = state.messages
     tool_names = "-".join([f"{tool.name}\n" for tool in tools])
@@ -215,9 +217,6 @@ def insert_clientele_node(state: ReceiptState):
         'result': result,
         'resume_type': 0, # 恢复成默认值
     }
-
-    pass
-
 
 # 失败节点
 def error_node(state: ReceiptState):
