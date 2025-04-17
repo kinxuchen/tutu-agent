@@ -232,5 +232,6 @@ milvus_vector_rag_store = Zilliz(
         'password': MILVUS_PASSWORD
     },
 )
+
 pool = ConnectionPool(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB)
 redis = Redis(connection_pool=pool)

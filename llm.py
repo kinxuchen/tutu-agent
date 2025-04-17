@@ -9,7 +9,10 @@ from constant import (
     EMBEDDING_BASE_URL,
     IMAGE_API_KEY,
     IMAGE_BASE_URL,
-    IMAGE_MODEL
+    IMAGE_MODEL,
+    DOUBAO_THINK_MODEL,
+    DOUBAO_THINK_API_KEY,
+    DOUBAO_THINK_BASE_URL
 )
 
 llm = ChatOpenAI(
@@ -39,5 +42,13 @@ embeddings = OpenAIEmbeddings(
 
 
 ds_llm = ChatDeepSeek(
-    model='deepseek-reasoner'
+    model='deepseek-reasoner',
+)
+
+doubao_llm = ChatOpenAI(
+    streaming=True,
+    model=DOUBAO_THINK_MODEL,
+    api_key=DOUBAO_THINK_API_KEY,
+    base_url=DOUBAO_THINK_BASE_URL,
+    max_retries=3
 )
