@@ -27,8 +27,7 @@ def encode_data(
 
 
 class RedisCheckpointSaver(BaseCheckpointSaver):
-    def __init__(self, redis_client_async: RedisAsync , redis_client: Redis, prefix):
-        self.redis_client_async = redis_client_async
+    def __init__(self, redis_client: Redis, prefix):
         self.redis_client = redis_client
         self.key = prefix
 
@@ -77,7 +76,7 @@ class RedisCheckpointSaver(BaseCheckpointSaver):
                 metadata,
                 new_versions
             )
-            await self.redis_client_async.set(key, data_json)
+            self.redis_client.set(key, data_json)
             return config
 
     @override
@@ -102,7 +101,7 @@ class RedisCheckpointSaver(BaseCheckpointSaver):
                 )
 
     @override
-    def aget_tuple(self, config: RunnableConfig) -> Optional[CheckpointTuple]:
+    async def aget_tuple(self, config: RunnableConfig) -> Optional[CheckpointTuple]:
         thread_id = config['configurable']['thread_id']
         user_id = config['configurable']['user_id']
         if thread_id is None:
@@ -111,7 +110,7 @@ class RedisCheckpointSaver(BaseCheckpointSaver):
             )
         else:
             key = self.get_key("{}:{}".format(user_id,thread_id))
-            data_json = self.redis_client_async.get(key)
+            data_json = self.redis_client.get(key)
             if data_json is None:
                 return None
             else:

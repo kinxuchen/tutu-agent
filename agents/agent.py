@@ -19,8 +19,7 @@ class Agent:
 
     def get_agent(self):
         if not self._instance._agent:
-            redis_async = RedisAsync(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB)
-            redis = Redis(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB)
-            self._instance._agent = create_agent(redis_async, redis)
+            from components.store import redis
+            self._instance._agent = create_agent(redis)
         return self._agent
 

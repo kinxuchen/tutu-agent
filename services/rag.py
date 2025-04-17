@@ -7,12 +7,17 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from components.store import milvus_vector_rag_store
 import tempfile
 import os
+
+def add_metadata_field(x):
+    x.metadata['url'] = x.metadata['source']
+    return x
+
+text_splitter = RecursiveCharacterTextSplitter(
+    chunk_size=500,
+    chunk_overlap=10
+)
 async def reader_markdown_content(files: List[UploadFile]):
     """加载 Markdown 格式并处理"""
-    text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=500,
-        chunk_overlap=10
-    )
     try:
         for file in files:
             file_name = file.filename
@@ -28,9 +33,12 @@ async def reader_markdown_content(files: List[UploadFile]):
                     mode='single',
                     strategy='fast'
                 )
+                # 加载 Markdown 文档
                 docs = loader.load()
+                # 对文档进行切割
                 documents = text_splitter.split_documents(docs)
-                milvus_vector_rag_store.add_documents(documents=documents)
+                # 将文档数据上传到向量数据库
+                milvus_vector_rag_store.add_documents(documents=list(map(add_metadata_field, documents)))
     except Exception as e:
         return []
 

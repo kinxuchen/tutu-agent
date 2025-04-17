@@ -14,14 +14,6 @@ redis = None
 redis_async = None
 agent: CompiledStateGraph | None = None
 
-app = FastAPI()
-
-app.include_router(gpts_router)
-app.include_router(agent_router)
-app.include_router(tool_router)
-app.include_router(rag_router)
-
-# 启动服务连接 Redis 和创建智能体
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     initial_vector_collection()
@@ -30,6 +22,15 @@ async def lifespan(app: FastAPI):
     yield
     close_vector_store()
     close_db()
+
+app = FastAPI(lifespan=lifespan)
+
+app.include_router(gpts_router)
+app.include_router(agent_router)
+app.include_router(tool_router)
+app.include_router(rag_router)
+
+# 启动服务连接 Redis 和创建智能体
 
 
 

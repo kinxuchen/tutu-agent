@@ -3,6 +3,7 @@ from langchain_core.example_selectors import SemanticSimilarityExampleSelector
 from langchain_core.prompts import FewShotPromptTemplate, PromptTemplate
 from components.store import milvus_vector_store
 
+
 example_selector = SemanticSimilarityExampleSelector(
     vectorstore=milvus_vector_store,
     k=2,

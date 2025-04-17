@@ -4,13 +4,11 @@ from pydantic import BaseModel, Field
 from langchain_core.messages import BaseMessage, AIMessage, HumanMessage, ToolMessage
 from agents.receipt.tools import vecotr_search, clientele_vector_search
 from agents.receipt.prompte import clientele_search_prompt
+from components.store import redis
 from llm import llm
 from typing import List, Dict, Any, Union
 from agents.receipt.example_selector import few_shot_prompt
 from checkpointer.RedisCheckpointerSaver import RedisCheckpointSaver
-from constant import REDIS_DB, REDIS_PORT, REDIS_HOST
-from redis.asyncio import Redis as RedisAsync
-from redis import Redis
 from pydash import get, every, some
 from langgraph.types import interrupt, Command
 from langgraph.checkpoint.memory import MemorySaver
@@ -24,11 +22,7 @@ tool_names = "- ".join([f"{tool.name}\n" for tool in tools])
 tool_map = {tool.name: tool for tool in tools}
 tool_map['clientele_vector_search'] = clientele_vector_search
 
-
-redis_async = RedisAsync(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB)
-redis = Redis(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB)
-
-redisCheckpointerSaver = RedisCheckpointSaver(redis_async, redis, 'main_agent')
+redisCheckpointerSaver = RedisCheckpointSaver(redis, 'main_agent')
 
 # 维护基准的客户信息
 

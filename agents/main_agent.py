@@ -126,8 +126,8 @@ main_graph.add_edge('sql_intent_node', END)
 main_graph.add_edge('order_intent_node', END)
 
 # 构建智能体
-def create_agent(redis_async: RedisAsync, redis: Redis):
-    checkpointer = RedisCheckpointSaver(redis_async, redis, 'main_agent')
+def create_agent(redis: Redis):
+    checkpointer = RedisCheckpointSaver(redis, 'main_agent')
     agent = main_graph.compile(checkpointer=checkpointer)
     return agent
 

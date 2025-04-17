@@ -1,5 +1,8 @@
 from pymilvus import MilvusClient, DataType
 import threading
+
+from redis import Redis,ConnectionPool
+
 from constant import (
     MILVUS_HOST,
     MILVUS_TOKEN,
@@ -10,7 +13,7 @@ from constant import (
     PARTITION_CLIENTELE_NAME,
     PARTITION_EXAMPLE_NAME,
     COLLECTION_EXAMPLE_NAME,
-    COLLECTION_RAG_NAME
+    COLLECTION_RAG_NAME, REDIS_HOST, REDIS_PORT, REDIS_DB
 )
 from llm import embeddings
 from langchain_milvus import Zilliz
@@ -40,11 +43,8 @@ def close_vector_store():
             _milvus_client.close()
             _milvus_client = None
 
-# 初始化向量数据库
-def initial_vector_collection():
-    vectory_store = get_vector_store()
+def create_tutu_collection(vectory_store:MilvusClient):
     is_tutu_collection = vectory_store.has_collection(COLLECTION_TUTU_NAME)
-    is_example_collection = vectory_store.has_collection(COLLECTION_EXAMPLE_NAME)
     # 如果不存在，则创建
     if not is_tutu_collection:
         tutu_schema = vectory_store.create_schema(enable_dynamic_field=True)
@@ -77,6 +77,8 @@ def initial_vector_collection():
             index_params=index_params
         )
 
+def create_example_collection(vectory_store:MilvusClient):
+    is_example_collection = vectory_store.has_collection(COLLECTION_EXAMPLE_NAME)
     if not is_example_collection:
         example_schema = vectory_store.create_schema(enable_dynamic_field=True)
         example_schema.add_field('vector', DataType.FLOAT_VECTOR, dim=1024, description="向量数据")
@@ -120,6 +122,55 @@ def initial_vector_collection():
             consistency_level="Session",
             index_params=example_index,
         )
+
+def create_rag_collection(vectory_store: MilvusClient):
+    is_rag_collection = vectory_store.has_collection(COLLECTION_RAG_NAME)
+    if not is_rag_collection:
+        rag_schema = vectory_store.create_schema(enable_dynamic_field=True, auto_id=True)
+        rag_schema.add_field('vector', DataType.FLOAT_VECTOR, dim=1024, description="向量数据")
+        rag_schema.add_field(
+            'text',
+            datatype=DataType.VARCHAR,
+            max_length=65535,
+            description="作为默认向量数据库存放原文本的数据",
+        )
+        rag_schema.add_field(
+            'auto_id',
+            datatype=DataType.INT64,
+            description="自动生成的 id",
+            is_primary=True
+        )
+        rag_schema.add_field(
+            'url',
+            datatype=DataType.VARCHAR,
+            max_length=65535,
+            description="资源的原始 url 地址",
+        )
+        rag_index = vectory_store.prepare_index_params()
+        rag_index.add_index(
+            field_name='vector',
+            index_type='AUTOINDEX',
+            metric_type='COSINE',
+            index_name='vector_index'
+        )
+        vectory_store.create_collection(
+            schema=rag_schema,
+            collection_name=COLLECTION_RAG_NAME,
+            primary_field_name="auto_id",
+            consistency_level="Session",
+            index_params=rag_index,
+        )
+
+# 初始化向量数据库
+def initial_vector_collection():
+    vectory_store = get_vector_store()
+    # 创建库存的集合
+    create_tutu_collection(vectory_store=vectory_store)
+    # 创建向量数据库的集合
+    create_example_collection(vectory_store=vectory_store)
+    # 创建 rag 向量数据库
+    create_rag_collection(vectory_store=vectory_store)
+
 
 
 
@@ -171,6 +222,9 @@ milvus_vector_rag_store = Zilliz(
     auto_id=True,
     vector_field="vector",
     text_field="text",
+    # metadata_schema={
+    #     "url": "VARCHAR"
+    # },
     connection_args={
         'uri': MILVUS_HOST,
         'token': MILVUS_TOKEN,
@@ -178,3 +232,5 @@ milvus_vector_rag_store = Zilliz(
         'password': MILVUS_PASSWORD
     },
 )
+pool = ConnectionPool(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB)
+redis = Redis(connection_pool=pool)
