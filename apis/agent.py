@@ -90,7 +90,7 @@ async def receipt_agent_request(user_id:str, thread_id: str, body: ReceiptReques
             }
         return {
             'success': True,
-            'data': agent_result.get('result', )
+            'data': agent_result.get('result', None)
         }
 
 @agent_router.post('/test_agent/{thread_id}')

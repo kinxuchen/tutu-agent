@@ -2,9 +2,9 @@ import jsonpickle
 from langgraph.graph import StateGraph, START, END
 from pydantic import BaseModel, Field
 from langchain_core.messages import BaseMessage, AIMessage, HumanMessage, ToolMessage
-from agents.receipt.tools import vecotr_search, clientele_vector_search
+from agents.receipt.tools import vector_search, clientele_vector_search
 from agents.receipt.prompte import clientele_search_prompt
-from components.store import redis
+from components._redis import redis
 from llm import llm
 from typing import List, Dict, Any, Union
 from agents.receipt.example_selector import few_shot_prompt
@@ -17,7 +17,7 @@ from agents.receipt.image_agent import image_receipt_agent
 MAX_RETRY = 2
 MAX_HUMAN_RETRY = 1
 
-tools = [vecotr_search]
+tools = [vector_search]
 tool_names = "- ".join([f"{tool.name}\n" for tool in tools])
 tool_map = {tool.name: tool for tool in tools}
 tool_map['clientele_vector_search'] = clientele_vector_search

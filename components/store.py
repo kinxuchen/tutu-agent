@@ -1,8 +1,5 @@
 from pymilvus import MilvusClient, DataType
 import threading
-
-from redis import Redis,ConnectionPool
-
 from constant import (
     MILVUS_HOST,
     MILVUS_TOKEN,
@@ -13,7 +10,7 @@ from constant import (
     PARTITION_CLIENTELE_NAME,
     PARTITION_EXAMPLE_NAME,
     COLLECTION_EXAMPLE_NAME,
-    COLLECTION_RAG_NAME, REDIS_HOST, REDIS_PORT, REDIS_DB
+    COLLECTION_RAG_NAME
 )
 from llm import embeddings
 from langchain_milvus import Zilliz
@@ -233,5 +230,3 @@ milvus_vector_rag_store = Zilliz(
     },
 )
 
-pool = ConnectionPool(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB)
-redis = Redis(connection_pool=pool)

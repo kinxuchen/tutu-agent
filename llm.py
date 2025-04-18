@@ -45,7 +45,7 @@ ds_llm = ChatDeepSeek(
     model='deepseek-reasoner',
 )
 
-doubao_llm = ChatOpenAI(
+doubao_img_llm = ChatOpenAI(
     streaming=True,
     model=DOUBAO_THINK_MODEL,
     api_key=DOUBAO_THINK_API_KEY,

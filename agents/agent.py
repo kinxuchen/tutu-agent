@@ -19,7 +19,7 @@ class Agent:
 
     def get_agent(self):
         if not self._instance._agent:
-            from components.store import redis
+            from components._redis import redis
             self._instance._agent = create_agent(redis)
         return self._agent
 

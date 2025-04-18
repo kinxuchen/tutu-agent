@@ -7,7 +7,7 @@ from llm import llm
 from functools import reduce
 from agents.rag.prompts import knowledge_search_prompts
 import jsonpickle
-from components.store import redis
+from components._redis import redis
 from checkpointer.RedisCheckpointerSaver import  RedisCheckpointSaver
 
 redisCheckpointerSaver = RedisCheckpointSaver(
