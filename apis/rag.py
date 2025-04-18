@@ -12,6 +12,7 @@ rag_router = APIRouter(prefix='/rag')
 
 @rag_router.post('/upload/md')
 async def upload_markdown_request(markdowns: List[UploadFile]):
+    """上传 Markdown 文件到知识库"""
     try:
         await reader_markdown_content(files=markdowns)
         return {
@@ -23,6 +24,7 @@ async def upload_markdown_request(markdowns: List[UploadFile]):
 
 @rag_router.post('/query/{thread_id}')
 async def query_request(thread_id: str, body: QuerySearch):
+    """Request/Response 的形式调用 RAG 查询"""
     try:
         config = {
             'configurable': {
@@ -44,6 +46,7 @@ async def query_request(thread_id: str, body: QuerySearch):
 
 @rag_router.post('/stream/{thread_id}')
 async def stream__request(thread_id: str, body: QuerySearch):
+    """以流式响应的方式进行 RAG 查询"""
     from langchain_core.messages import AIMessageChunk, AIMessage
     config = {
         'configurable': {

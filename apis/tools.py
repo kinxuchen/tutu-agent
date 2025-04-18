@@ -8,6 +8,7 @@ tool_router = APIRouter(prefix='/tools')
 
 @tool_router.post('/upload/image')
 async def upload_image_request(image: UploadFile):
+    """上传图片的 OSS"""
     filename = image.filename
     try:
         result = await cos_upload(filename, image.file)

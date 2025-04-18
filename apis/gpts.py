@@ -1,10 +1,9 @@
 from fastapi import APIRouter
-from components.db import Session
-from pydantic import BaseModel, Field
 import traceback
 from typing import Any, List, Sequence
 from services.inventory import insert_inventory as insert_inventory_db, insert_vector_inventory
-from dto.inventory_dto import InventoryDTO, EmbeddingDTO, ClienteleDTO, ExampleListDTO
+from dto.inventory_dto import InventoryDTO, EmbeddingDTO, ClienteleDTO
+from dto.chat_request_dto import  ExampleRequestBody
 from services.clientele import insert_vector_clientele, insert_clientele
 from services.example import insert_example_into_vector
 from llm import embeddings
@@ -15,6 +14,7 @@ gpts_router = APIRouter(prefix='/api')
 # 数据库中插入数据
 @gpts_router.post('/inventory')
 async def insert_inventory(body: InventoryDTO):
+    """插入库存数据"""
     try:
         # 插入对应数据，然后向量化这条数据
         inventor = insert_inventory_db(request=body)
@@ -34,6 +34,7 @@ async def insert_inventory(body: InventoryDTO):
 # 添加客户信息到库中
 @gpts_router.post('/add_clientele')
 async def insert_clientele_request(body: ClienteleDTO):
+    """插入客户数据"""
     try:
         # todo 校验逻辑暂时不处理
         client = insert_clientele(body)
@@ -52,7 +53,8 @@ async def insert_clientele_request(body: ClienteleDTO):
 
 # 插入示例数据
 @gpts_router.post('/add_examples')
-async def insert_examples_request(body: List[dict]):
+async def insert_examples_request(body: List[ExampleRequestBody]):
+    """插入样本数据"""
     try:
         await insert_example_into_vector(body)
         return {
@@ -70,5 +72,6 @@ async def insert_examples_request(body: List[dict]):
 # 新增一个接口，用于 embeddings 处理
 @gpts_router.post('/embeddings')
 async def embeddings_request(body: EmbeddingDTO):
+    """embedding 自然文本"""
     embedding = embeddings.embed_query(body.text)
     return embedding

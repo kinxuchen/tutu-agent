@@ -22,12 +22,5 @@ class ClienteleDTO(BaseModel):
 
 
 class EmbeddingDTO(BaseModel):
-    text: str = Field(description="文本")
+    text: str = Field(description="需要向量化的数据")
 
-# 示例输出
-class ExampleDTO(BaseModel):
-    input: str = Field(description="输入")
-    output: str = Field(description="输出")
-
-class ExampleListDTO(BaseModel):
-    examples: List[ExampleDTO] = Field(description="示例列表")
