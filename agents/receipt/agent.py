@@ -13,6 +13,7 @@ from pydash import get, every, some
 from langgraph.types import interrupt, Command
 from langgraph.checkpoint.memory import MemorySaver
 from agents.receipt.image_agent import image_receipt_agent
+from agents.receipt.enum import RESUME_TYPE
 
 MAX_RETRY = 2
 MAX_HUMAN_RETRY = 1
@@ -29,11 +30,12 @@ redisCheckpointerSaver = RedisCheckpointSaver(redis, 'main_agent')
 class ReceiptState(BaseModel):
     image_urls: List[str] = Field(description='图片地址', default=None)
     messages: List[BaseMessage]  # 消息列表
-    resume_type: int = Field(description='中断类型', default=0) # 0 全部出错 1 客户信息缺失
+    resume_type: RESUME_TYPE = Field(description='中断类型', default=RESUME_TYPE.all) # 0 全部出错 1 客户信息缺失
     result: Union[List[Dict[str, Any]], None] = Field(description='最终结果', default=None)
     error_message: Union[str, None] = Field(description='错误信息', default=None)
     # 搜索重试次数
     retry: int = Field(description='重试次数', default=0)
+    # 人工重试次数
     human_retry: int = Field(description='人工重试次数', default=0)
     is_small: bool = Field(description="是否是细码", default=True)
 
