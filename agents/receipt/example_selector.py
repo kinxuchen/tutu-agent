@@ -42,7 +42,6 @@ few_shot_prompt = FewShotPromptTemplate(
         ## 注意
         - 如果没有相关示例，请返回空。只有存在示例的情况下，你才会思考用户的输入
         - 如果解析不出内容，可以返回空
-        
         你可以使用下面这些工具
         {tool_names}
     """,

@@ -13,7 +13,7 @@ clientele_search_prompt = ChatPromptTemplate.from_messages(
 )
 
 # 细码采购单提示词
-small_system_template = """
+small_image_system_template = """
   ## 角色
     你是一名具有丰富经验的商人，你平时和客户交易需要经常使用单据记录一些基本信息。
   ## 任务
@@ -41,7 +41,7 @@ small_system_template = """
 """
 
 # 粗码提示词
-thick_system_template = """
+thick_image_system_template = """
   ## 角色
     你是一名具有丰富经验的商人，你平时和客户交易需要经常使用单据记录一些基本信息。
   ## 任务

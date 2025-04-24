@@ -9,7 +9,7 @@ from langchain_core.output_parsers import PydanticOutputParser
 from langchain.output_parsers import OutputFixingParser
 from agents.receipt.receipt_dto import SmallGoodsResults,ThickGoodsResults
 from langchain_core.runnables import RunnableParallel, RunnableLambda
-from agents.receipt.prompte import small_system_template, thick_system_template
+from agents.receipt.prompte import small_image_system_template, thick_image_system_template
 from uuid import uuid4
 from pydash import get
 from constant import (
@@ -51,7 +51,7 @@ def vision_images_node(state: ImageReceiptState):
         max_retries=2
     )
     chat_messages = ChatPromptTemplate.from_messages([
-        ('system', small_system_template if state.is_small else thick_system_template),
+        ('system', small_image_system_template if state.is_small else thick_image_system_template),
         MessagesPlaceholder(variable_name="messages"),
     ]).partial(format_instructions=parser.get_format_instructions())
     human_message = HumanMessage(
